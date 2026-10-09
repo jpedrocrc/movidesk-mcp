@@ -1,0 +1,31 @@
+[project]
+name = "movidesk-mcp-server"
+version = "1.0.0"
+description = "MCP server somente leitura para a API pública do Movidesk"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "João Pedro Rodrigues", email = "jpedrocrc@hotmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.2.0",
+    "httpx>=0.27",
+]
+keywords = ["mcp", "movidesk", "helpdesk", "claude"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+movidesk-mcp-server = "movidesk_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/movidesk_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/movidesk_mcp", "test_server.py", "README.md", "LICENSE"]
