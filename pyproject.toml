@@ -1,6 +1,6 @@
 [project]
 name = "movidesk-mcp-server"
-version = "1.0.0"
+version = "1.0.1"
 description = "MCP server somente leitura para a API pública do Movidesk"
 readme = "README.md"
 license = "MIT"
@@ -8,7 +8,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "João Pedro Rodrigues", email = "jpedrocrc@hotmail.com" }]
 requires-python = ">=3.10"
 dependencies = [
-    "mcp[cli]>=1.2.0",
+    "mcp[cli]>=1.2.0,<2",  # mcp 2.x renomeou FastMCP
     "httpx>=0.27",
 ]
 keywords = ["mcp", "movidesk", "helpdesk", "claude"]
