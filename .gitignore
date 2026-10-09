@@ -4,4 +4,18 @@ dist/
 build/
 *.egg-info/
 .venv/
+
+# Segredos: o token do Movidesk só deve existir no claude_desktop_config.json (fora do projeto)
 .env
+.env.*
+*.bak
+claude_desktop_config*.json
+
+# Dados exportados do Movidesk (arquivo_saida, anexos de storage/download, planilhas)
+saidas/
+*.json
+*.csv
+*.xlsx
+*.xls
+*.eml
+*.msg
