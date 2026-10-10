@@ -1,22 +1,42 @@
-# Movidesk MCP (somente leitura)
+<div align="center">
 
-Servidor MCP em Python (transporte stdio) para a API pública do Movidesk
-(`https://api.movidesk.com/public/v1`). Ele lê qualquer dado que a API expõe, com
-todos os parâmetros OData (`$select`, `$filter`, `$expand` aninhado, `$orderby`,
-`$top`, `$skip`) e os parâmetros próprios de cada rota. Nunca cria, altera ou exclui nada.
+# Movidesk MCP Server
 
-## Início rápido
+**Give Claude, ChatGPT or Codex read-only access to everything in your [Movidesk](https://www.movidesk.com) help desk.**
 
-1. Instalar
+Tickets, customers, SLAs, time tracking, satisfaction surveys and more, through the
+[Model Context Protocol](https://modelcontextprotocol.io).
+
+[![PyPI](https://img.shields.io/pypi/v/movidesk-mcp-server?color=2563eb&label=PyPI)](https://pypi.org/project/movidesk-mcp-server/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-2563eb)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
+[![Read-only](https://img.shields.io/badge/access-read--only-16a34a)](#-security)
+[![MCP](https://img.shields.io/badge/MCP-stdio-7c3aed)](https://modelcontextprotocol.io)
+
+[Quick start](#-quick-start) · [What you can ask](#-what-you-can-ask) · [Available data](#-available-data) · [Tools](#-tools) · [Development](#-development)
+
+</div>
+
+---
+
+## 🚀 Quick start
+
+**1. Install**
 
 ```bash
 pip install movidesk-mcp-server
 ```
 
-2. Configurar o Claude Desktop
+**2. Get your API token**
 
-Adicione ao `claude_desktop_config.json` (Windows: `%APPDATA%\Claude\claude_desktop_config.json`;
-macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+In Movidesk, go to **Settings → Account → Parameters → Environment tab → API key**.
+
+**3. Connect your AI client**
+
+<details open>
+<summary><b>Claude Desktop</b></summary>
+
+Edit `claude_desktop_config.json`. On Windows it is in `%APPDATA%\Claude\`; on macOS, in `~/Library/Application Support/Claude/`.
 
 ```json
 {
@@ -24,75 +44,111 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
     "movidesk": {
       "command": "movidesk-mcp-server",
       "env": {
-        "MOVIDESK_TOKEN": "seu-token-aqui"
+        "MOVIDESK_TOKEN": "your-token-here"
       }
     }
   }
 }
 ```
 
-Depois feche o Claude Desktop por completo (no Windows: ícone perto do relógio > Sair) e abra de novo.
+Then quit Claude Desktop completely (on Windows: tray icon → **Quit**) and open it again.
 
-3. Ou registrar no Claude Code
+</details>
+
+<details>
+<summary><b>Claude Code</b></summary>
 
 ```bash
-claude mcp add movidesk -e MOVIDESK_TOKEN=seu-token-aqui -- movidesk-mcp-server
+claude mcp add movidesk -e MOVIDESK_TOKEN=your-token-here -- movidesk-mcp-server
 ```
 
-O token é gerado no Movidesk em **Configurações > Conta > Parâmetros > aba Ambiente > Gerar nova chave**.
-Gerar uma chave nova invalida a anterior.
+</details>
 
-### Atualizar
+<details>
+<summary><b>Codex CLI, Codex IDE extension and ChatGPT desktop app</b></summary>
+
+All three share the same configuration file, so you only need to set it up once.
+
+Using the Codex CLI:
+
+```bash
+codex mcp add movidesk --env MOVIDESK_TOKEN=your-token-here -- movidesk-mcp-server
+```
+
+Or edit `~/.codex/config.toml` (on Windows: `%USERPROFILE%\.codex\config.toml`):
+
+```toml
+[mcp_servers.movidesk]
+command = "movidesk-mcp-server"
+
+[mcp_servers.movidesk.env]
+MOVIDESK_TOKEN = "your-token-here"
+```
+
+In the ChatGPT desktop app you can also add it from **Settings → MCP servers → Add server → STDIO**, then select **Restart**.
+
+> [!NOTE]
+> ChatGPT on the web can't use this server: it doesn't read local configuration and only connects to remote MCP servers. Use the ChatGPT desktop app or Codex instead.
+
+</details>
+
+**Updating**
 
 ```bash
 pip install --upgrade movidesk-mcp-server
 ```
 
-Depois reinicie o Claude Desktop. A configuração não muda.
+Restart your AI client afterwards. Your configuration stays the same.
 
-### Exemplos de pedidos ao Claude
+## 💬 What you can ask
 
-- "Liste os endpoints do Movidesk e o que cada um traz"
-- "Busque o ticket 12345 com todas as ações e o histórico de status"
-- "Faça um resumo dos tickets criados em setembro: status, equipes e SLA"
-- "Liste os tickets resolvidos pela equipe Suporte nesta semana"
-- "Quais clientes da empresa ACME estão ativos?"
+Ask in plain language, in any language:
 
-## Dados disponíveis
+- *"List the Movidesk endpoints and what each one returns"*
+- *"Get ticket 12345 with all its actions and status history"*
+- *"Summarize the tickets created in September: status, teams and SLA compliance"*
+- *"Which tickets did the Support team resolve this week?"*
+- *"Which contacts from ACME are still active?"*
 
-Todos os endpoints abaixo foram testados contra a API real em 09/10/2026.
-Os campos, expansões e limites de cada um estão em [`ENDPOINTS.md`](src/movidesk_mcp/ENDPOINTS.md).
+## 📦 Available data
 
-| Endpoint | Conteúdo |
+All endpoints below were tested against a live Movidesk account.
+
+| Endpoint | What it returns |
 |---|---|
-| `tickets` | Tickets com última atualização nos últimos 90 dias: dados, clientes, ações, apontamentos, despesas, anexos, históricos de responsável e status, campos adicionais, ativos |
-| `tickets/past` | Tickets mais antigos, com o mesmo layout |
-| `tickets/htmldescription` | HTML das ações de um ticket (recente ou antigo) |
-| `tickets/merged` | Tickets mesclados, por ticket ou por período |
-| `persons` | Pessoas, empresas e departamentos (agentes e clientes), com e-mails, contatos, endereços e organizações |
-| `services` | Catálogo de serviços |
-| `activity` | Atividades usadas em apontamento de horas |
-| `timeAgreement` | Contratos de horas |
-| `timeAgreementConsumption` | Consumo de horas de um contrato por período |
-| `survey/questions`, `survey/questions/{id}` | Perguntas da pesquisa de satisfação |
-| `survey/responses` | Respostas da pesquisa de satisfação (NPS, carinhas etc.) |
-| `kb/article`, `article/{id}` | Busca e conteúdo de artigos da base de conhecimento |
-| `storage/download` | Download de anexos pelo hash |
+| `tickets` | Tickets updated in the last 90 days: details, clients, actions, time entries, expenses, attachments, owner and status history, custom fields, assets |
+| `tickets/past` | Older tickets, in the same format |
+| `tickets/htmldescription` | HTML of a ticket's actions (recent or old tickets) |
+| `tickets/merged` | Merged tickets, by ticket or by date range |
+| `persons` | People, companies and departments (agents and clients), with e-mails, contacts, addresses and organizations |
+| `services` | Service catalog |
+| `activity` | Activities used for time tracking |
+| `timeAgreement` | Hour contracts |
+| `timeAgreementConsumption` | Hour consumption of a contract for a period |
+| `survey/questions`, `survey/questions/{id}` | Satisfaction survey questions |
+| `survey/responses` | Satisfaction survey responses (NPS, smiley faces, etc.) |
+| `kb/article`, `article/{id}` | Knowledge base search and full articles |
+| `storage/download` | Attachment download by hash |
 
-## Ferramentas
+Fields, expansions and limits for each endpoint are documented in [`ENDPOINTS.md`](src/movidesk_mcp/ENDPOINTS.md) (in Portuguese).
 
-| Ferramenta | O que faz |
+## 🧰 Tools
+
+Tool names are in Portuguese; your AI assistant picks the right one from your request.
+
+| Tool | Description |
 |---|---|
-| `movidesk_get(endpoint, params, paginar, max_registros, permitir_nao_listados, arquivo_saida)` | Chama qualquer GET e repassa os parâmetros sem restrição. Com `paginar=True` percorre as páginas sozinho (OData, cursor ou `page`, conforme a rota) até `max_registros`. |
-| `listar_endpoints(endpoint, completo)` | Devolve o mapeamento para o modelo saber o que pode pedir |
-| `listar_tickets(...)` | Lista tickets com filtro, campos, expansões e período; `incluir_antigos=True` junta `tickets/past` |
-| `buscar_ticket(id)` | Ticket completo (todas as coleções) por número ou protocolo; procura em `tickets/past` se precisar; `incluir_html=True` traz o HTML das ações |
-| `listar_pessoas(...)` | Pessoas, empresas e departamentos, com busca por nome |
-| `resumo_tickets(data_inicio, data_fim)` | Contagens por status, equipe, responsável, categoria, urgência, serviço, origem e dia, mais tempo de resolução e cumprimento de SLA |
+| `movidesk_get` | Calls any `GET` endpoint and passes every parameter through unchanged. With `paginar=True` it paginates automatically up to `max_registros`. `arquivo_saida` saves the full result to disk. |
+| `listar_endpoints` | Returns the API map (endpoints, fields, expansions, limits), so the assistant knows what it can request |
+| `listar_tickets` | Lists tickets with filters, fields, expansions and a creation date range; `incluir_antigos=True` also searches `tickets/past` |
+| `buscar_ticket` | Fetches a full ticket by number or protocol, falling back to `tickets/past`; `incluir_html=True` adds the actions' HTML |
+| `listar_pessoas` | Lists people, companies and departments, with name search |
+| `resumo_tickets` | Ticket statistics for a period: counts by status, team, owner, category, urgency, service, origin and day, plus resolution time and SLA compliance |
 
-Também há o recurso `movidesk://endpoints` com o conteúdo do `ENDPOINTS.md`.
+The resource `movidesk://endpoints` exposes the full API map as Markdown.
 
-Exemplo de chamada genérica:
+<details>
+<summary><b>Example of a generic call</b></summary>
 
 ```json
 {
@@ -108,55 +164,73 @@ Exemplo de chamada genérica:
 }
 ```
 
-## Limites e comportamento
+</details>
 
-- **Rate limit:** 10 req/min das 07:01 às 18:59 (Brasília); livre das 19:00 às 07:00. O servidor segura as chamadas localmente nesse horário para não estourar o limite.
-- **Bloqueio por erro:** 3 requisições com erro bloqueiam a API por 60 s, depois 120 s, depois 300 s. Por isso o servidor valida localmente o que consegue antes de chamar a API (por exemplo, `$select` obrigatório nas listas de tickets) e, num 429, espera o tempo do header `retry-after` e tenta de novo.
-- **Erros:** 401 (token), 404, 400 (com a mensagem da API) e timeout voltam como JSON `{"erro": ..., "mensagem": ...}`. Timeout e 5xx são repetidos com backoff.
-- **Respostas grandes:** acima de `MOVIDESK_MAX_CHARS` a resposta é cortada, com um aviso que sugere `$select`/`$filter`. Use `arquivo_saida` para gravar o resultado completo em disco.
-- **Tickets antigos:** `/tickets` só traz tickets com `lastUpdate` nos últimos 90 dias. Os demais estão em `/tickets/past`.
-- **Segurança:** só GET. As rotas de telefonia que usam GET mas registram chamadas (`asterisk_*`) estão bloqueadas, mesmo com `permitir_nao_listados=True`. O token só é lido do ambiente, nunca vai para o log, e qualquer ocorrência dele é removida das respostas.
+## 🚦 Limits and behavior
 
-### Variáveis de ambiente opcionais
+| Topic | Behavior |
+|---|---|
+| **Rate limit** | Movidesk allows 10 requests/minute from 07:01 to 18:59 (Brasília time) and has no limit from 19:00 to 07:00. The server throttles calls locally during business hours. |
+| **Error lockout** | 3 failed requests lock the API for 60 s, then 120 s, then 300 s. The server validates what it can before calling the API (for example, the `$select` that ticket listings require) and retries `429` responses after the `retry-after` delay. |
+| **Errors** | `401`, `404`, `400` (with the API's message) and timeouts come back as JSON: `{"erro": ..., "mensagem": ...}`. Timeouts and `5xx` errors are retried with backoff. |
+| **Large responses** | Responses longer than `MOVIDESK_MAX_CHARS` are truncated, with a hint to narrow the query with `$select`/`$filter`. Use `arquivo_saida` to save the complete result. |
+| **Old tickets** | `/tickets` only returns tickets updated in the last 90 days; older ones live in `/tickets/past`. |
 
-| Variável | Padrão | Uso |
+<details>
+<summary><b>Optional environment variables</b></summary>
+
+| Variable | Default | Purpose |
 |---|---|---|
-| `MOVIDESK_RATE_LIMIT` | `10` | Requisições por minuto (0 desliga o limitador local) |
-| `MOVIDESK_RATE_LIMIT_MODO` | `horario` | `horario` limita só das 07:01 às 18:59; `sempre` limita 24 h |
-| `MOVIDESK_PAGE_SIZE` | `100` | Tamanho da página na paginação automática |
-| `MOVIDESK_MAX_RETRIES` | `3` | Novas tentativas em 429/5xx/timeout |
-| `MOVIDESK_MAX_ESPERA` | `320` | Maior espera (s) aceita num retry de 429 |
-| `MOVIDESK_TIMEOUT` | `60` | Timeout por requisição (s) |
-| `MOVIDESK_MAX_CHARS` | `60000` | Tamanho máximo da resposta antes de cortar |
-| `MOVIDESK_LOG_LEVEL` | `WARNING` | Nível de log (sempre em stderr) |
+| `MOVIDESK_RATE_LIMIT` | `10` | Requests per minute (`0` disables local throttling) |
+| `MOVIDESK_RATE_LIMIT_MODO` | `horario` | `horario` throttles only from 07:01 to 18:59; `sempre` throttles 24 h |
+| `MOVIDESK_PAGE_SIZE` | `100` | Page size for automatic pagination |
+| `MOVIDESK_MAX_RETRIES` | `3` | Retries on `429`, `5xx` and timeouts |
+| `MOVIDESK_MAX_ESPERA` | `320` | Longest wait (seconds) accepted for a `429` retry |
+| `MOVIDESK_TIMEOUT` | `60` | Per-request timeout (seconds) |
+| `MOVIDESK_MAX_CHARS` | `60000` | Maximum response size before truncation |
+| `MOVIDESK_LOG_LEVEL` | `WARNING` | Log level (always written to stderr) |
 
-## Instalação: outras formas
+</details>
 
-Requer Python 3.10 ou superior.
+## 🔒 Security
 
-| Forma | Comando |
+- **Read-only.** The server only sends `GET` requests. The telephony endpoints (`asterisk_*`) are blocked because they record calls even though they use `GET`, and they stay blocked even with `permitir_nao_listados=True`.
+- **Token handling.** The token is read only from `MOVIDESK_TOKEN`, never written to logs, and removed from every response and error message.
+- **Real customer data.** The API key gives access to the whole account, so conversations may contain personal data (names, e-mails, tax IDs, ticket content). Request only what you need and follow your company's data protection policy.
+- **One token per person.** Never share your token in chat, e-mail or GitHub issues. If it leaks, generate a new key in Movidesk right away.
+
+## 📥 Other installation methods
+
+Requires Python 3.10 or newer.
+
+| Method | Command |
 |---|---|
 | PyPI | `pip install movidesk-mcp-server` |
-| Sem instalar, com uv | `uvx movidesk-mcp-server` (no `claude_desktop_config.json`: `"command": "uvx", "args": ["movidesk-mcp-server"]`) |
-| GitHub (exige acesso ao repositório) | `pip install git+https://github.com/jpedrocrc/movidesk-mcp` |
+| uv, without installing | `uvx movidesk-mcp-server` (in `claude_desktop_config.json`: `"command": "uvx", "args": ["movidesk-mcp-server"]`) |
+| GitHub | `pip install git+https://github.com/jpedrocrc/movidesk-mcp` |
 
-**Windows:** o `pip` coloca o executável em `...\Python3xx\Scripts`. Se essa pasta
-não estiver no PATH, o Claude Desktop não encontra `movidesk-mcp-server`. Nesse caso,
-use o caminho completo do `.exe` em `"command"`, ou `"command": "python"` com
-`"args": ["-m", "movidesk_mcp"]`.
+<details>
+<summary><b>Windows: "command not found"</b></summary>
 
-## Desenvolvimento
+`pip` installs the executable in `...\Python3xx\Scripts`. If that folder is not on your `PATH`, your AI client cannot find `movidesk-mcp-server`. Use the full path to the `.exe` in `"command"`, or set `"command": "python"` and `"args": ["-m", "movidesk_mcp"]`.
 
-### Estrutura
+</details>
 
-| Arquivo | Conteúdo |
+## 🛠 Development
+
+<details>
+<summary><b>Project structure</b></summary>
+
+| File | Contents |
 |---|---|
-| `pyproject.toml` | Pacote, dependências e comando `movidesk-mcp-server` |
-| `src/movidesk_mcp/server.py` | Servidor MCP e ferramentas |
-| `src/movidesk_mcp/ENDPOINTS.md` | Mapeamento da API (endpoints, parâmetros, campos, expansões e limites). O bloco JSON no fim é lido pelo servidor; para cobrir um endpoint novo, basta acrescentá-lo ali. |
-| `test_server.py` | Testes offline e de cobertura contra a API real |
+| `pyproject.toml` | Package metadata, dependencies and the `movidesk-mcp-server` command |
+| `src/movidesk_mcp/server.py` | MCP server and tools |
+| `src/movidesk_mcp/ENDPOINTS.md` | API map. The server reads the JSON block at the end of this file, so supporting a new endpoint only takes adding it there. |
+| `test_server.py` | Offline tests and coverage tests against the real API |
 
-### Ambiente local
+</details>
+
+**Local setup**
 
 ```bash
 git clone https://github.com/jpedrocrc/movidesk-mcp
@@ -164,55 +238,58 @@ cd movidesk-mcp
 pip install -e .
 ```
 
-Com `-e`, as mudanças no código valem sem reinstalar: basta reiniciar o Claude.
-Para voltar à versão publicada: `pip uninstall -y movidesk-mcp-server` e depois `pip install movidesk-mcp-server`.
+With `-e`, code changes take effect without reinstalling; just restart your AI client. To switch back to the published version, run `pip uninstall -y movidesk-mcp-server`, then `pip install movidesk-mcp-server`.
 
-O pacote exige `mcp<2`: o SDK `mcp` 2.x renomeou o `FastMCP`, e a migração ainda não foi feita.
+> [!NOTE]
+> The package requires `mcp<2`. Version 2.x of the `mcp` SDK renamed `FastMCP`, and the server has not been migrated yet.
 
-### Testes
+**Tests**
 
 ```bash
 python test_server.py --offline
 ```
 
-Esse modo não usa rede: valida o mapeamento, o registro das ferramentas e as travas (escrita bloqueada, `$select` obrigatório, token ocultado).
+Runs without network access. It checks the API map, tool registration and the safeguards (blocked writes, required `$select`, token masking).
 
 ```bash
 python test_server.py
 ```
 
-Esse modo precisa de `MOVIDESK_TOKEN` no ambiente. Ele chama cada endpoint mapeado com `$top=1` (ou `limit=1`/`pageSize=1`) e usa os IDs que encontra para testar as rotas que pedem um id (HTML das ações, pergunta da pesquisa, artigo, anexo, consumo do contrato). No horário limitado leva cerca de 2 minutos.
+Needs `MOVIDESK_TOKEN`. It calls every mapped endpoint with `$top=1` (or `limit=1`/`pageSize=1`) and reuses the IDs it finds to test endpoints that need one. During business hours it takes about 2 minutes because of the rate limit.
 
-Para testar com o MCP Inspector (usa `uv` e `npx`), rode o comando abaixo e defina `MOVIDESK_TOKEN` em *Environment Variables* antes de conectar:
+To try the server in the MCP Inspector (requires `uv` and `npx`), run the command below and set `MOVIDESK_TOKEN` under *Environment Variables* before connecting:
 
 ```bash
 mcp dev src/movidesk_mcp/server.py
 ```
 
-### Publicar uma nova versão
+<details>
+<summary><b>Releasing a new version</b></summary>
 
-1. Aumente a versão em `pyproject.toml` (`version`) e em `src/movidesk_mcp/__init__.py` (`__version__`). O PyPI não aceita reenviar um número de versão já publicado.
-2. Rode os dois testes acima.
-3. Gere os pacotes:
+1. Bump the version in `pyproject.toml` (`version`) and `src/movidesk_mcp/__init__.py` (`__version__`). PyPI never accepts the same version number twice.
+2. Run both test modes.
+3. Build:
    ```powershell
    Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue; uv build
    ```
-4. Publique com o token do PyPI de escopo restrito ao projeto `movidesk-mcp-server`:
+4. Publish with a PyPI token scoped to the `movidesk-mcp-server` project:
    ```powershell
    $env:UV_PUBLISH_TOKEN = "pypi-..."; uv publish
    ```
-5. Confira num ambiente limpo: `pip install --upgrade movidesk-mcp-server` e `pip show movidesk-mcp-server`.
-6. Faça commit e push no GitHub.
+5. Check in a clean environment: `pip install --upgrade movidesk-mcp-server`, then `pip show movidesk-mcp-server`.
+6. Commit and push to GitHub.
 
-Se uma versão publicada tiver problema, **retire-a (yank)** em pypi.org > projeto > Lançamentos > versão > *Retirar lançamento*, e publique a correção numa versão nova. Não exclua arquivos: a exclusão é permanente e o nome do arquivo não pode ser reutilizado.
+If a published version is broken, **yank** it on PyPI (project → Releases → version → *Yank*) and publish the fix as a new version. Don't delete files: deletion is permanent and the file name can never be reused.
 
-## Histórico de versões
+</details>
 
-| Versão | Mudanças |
+## 📋 Changelog
+
+| Version | Changes |
 |---|---|
-| 1.0.1 | Exige `mcp<2`. Na 1.0.0, uma instalação limpa trazia o `mcp` 2.x e o servidor não iniciava. |
-| 1.0.0 | Primeira versão. **Retirada (yank)** do PyPI pelo problema acima. |
+| **1.0.1** | Requires `mcp<2`. With 1.0.0, a clean install pulled `mcp` 2.x and the server failed to start. |
+| 1.0.0 | First release. **Yanked** from PyPI because of the issue above. |
 
-## Licença
+## 📄 License
 
-MIT. Veja [LICENSE](LICENSE).
+[MIT](LICENSE) © João Pedro Rodrigues
